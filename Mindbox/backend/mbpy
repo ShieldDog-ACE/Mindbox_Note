@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+"""Mindbox 后端启动器。
+
+exFAT 分区不支持符号链接(venv 无法使用),因此依赖以 pip --target
+安装到 backend/.pylibs,由本脚本注入 sys.path 后运行 run.py。
+
+关于 __pycache__:早期为"减少文件数与磁盘写入"禁用了字节码缓存,代价是
+每次启动都要重新编译 .pylibs 里全部模块(数百个),冷启动明显变慢。
+现在恢复缓存:目录不可写(root 安装/PyInstaller)时 Python 会静默跳过,
+没有任何副作用;可写时则省下每次启动的编译开销。
+"""
+import os
+import runpy
+import sys
+import warnings
+
+warnings.filterwarnings("ignore", category=SyntaxWarning)  # jieba 在 py3.12 下的正则转义噪音
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, ".pylibs"))
+sys.dont_write_bytecode = False
+os.environ.setdefault("MINDBOX_RELOAD", "0")
+runpy.run_path(os.path.join(HERE, "run.py"), run_name="__main__")

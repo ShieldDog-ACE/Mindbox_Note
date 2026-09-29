@@ -1,0 +1,5 @@
+#!/bin/sh
+# Mindbox-MCP 启动器 —— 在 MCP 客户端里把这个文件当 command 用即可。
+# 用绝对路径定位自身,不依赖 PATH / 当前工作目录。
+DIR=$(cd "$(dirname "$0")" && pwd)
+exec python3 "$DIR/server.py" "$@"

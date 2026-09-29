@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "mindbox-memory": {
+      "command": "/path/to/Mindbox-MCP/run-mindbox-mcp",
+      "args": [],
+      "env": {}
+    }
+  }
+}

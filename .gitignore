@@ -1,0 +1,30 @@
+# 依赖
+node_modules/
+
+# 构建产物
+dist/
+release/
+*.deb
+*.AppImage
+*.snap
+*.rpm
+
+# Python
+__pycache__/
+*.py[cod]
+.pylibs/
+
+# 编辑器与系统
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# 记忆库内容是运行时数据，不入库，只保留文件夹和保护说明
+Mindbox-MCP/短期记忆/*
+Mindbox-MCP/长期记忆/*
+Mindbox-MCP/永久记忆/*
+!Mindbox-MCP/短期记忆/_保护说明.md
+!Mindbox-MCP/长期记忆/_保护说明.md
+!Mindbox-MCP/永久记忆/_保护说明.md

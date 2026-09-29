@@ -1,0 +1,36 @@
+appId: com.mindbox.app
+productName: Mindbox
+publish: null # 本地打包,不发布到任何渠道
+directories:
+  output: release
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+  # 渲染层已由 Vite 全量打包进 dist/,主进程只 require electron 自身,
+  # 生产依赖无需随包分发——否则 asar 会白装 198MB node_modules
+  - "!node_modules/**/*"
+# 后端整体(含 .pylibs 依赖)打进安装包,自包含,目标机只需系统 python3
+# M4 换 PyInstaller 单文件 sidecar 后可瘦身
+extraResources:
+  - from: backend
+    to: backend
+    filter:
+      - "**/*"
+      - "!**/__pycache__"
+# 窗口图标不走 extraResources(exFAT 不支持硬链接),改由 public/icon.png → dist/ 随 asar 分发
+deb:
+  # 覆盖 electron-builder 自带的 after-install:它用 root 跑 `unshare --user` 探测
+  # 用户命名空间,root 下必然成功,于是把 chrome-sandbox 设成 0755;
+  # 真实用户在 Ubuntu 24.04 上因 AppArmor 限制用不了命名空间,回退 SUID helper 时直接崩溃。
+  # 我们的版本无条件设 4755。
+  afterInstall: build/after-install.tpl
+linux:
+  target:
+    - deb
+  icon: build/icon.png # 显式指定,避免 electron-builder 回退到默认 Electron 图标
+  category: Office
+  maintainer: Fuka <fuka@local>
+  desktop:
+    Name: Mindbox
+    Comment: AI 记忆笔记软件

@@ -1,0 +1,9 @@
+{
+  "port": 8765,
+  "token": "",
+  "blacklist": [],
+  "memory": {
+    "promote_success_rate": 0.9,
+    "promote_min_calls": 100
+  }
+}
