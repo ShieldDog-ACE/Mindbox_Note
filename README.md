@@ -12,7 +12,7 @@
 <p align="center">
   <img alt="desktop" src="https://img.shields.io/badge/desktop-1.0.4-8a6cff?style=flat-square" />
   <img alt="mcp" src="https://img.shields.io/badge/MCP_server-1.0.0-7fd3a8?style=flat-square" />
-  <img alt="license" src="https://img.shields.io/badge/license-MIT-7fb0ff?style=flat-square" />
+  <img alt="license" src="https://img.shields.io/badge/license-BSD_2--Clause-7fb0ff?style=flat-square" />
   <img alt="deps" src="https://img.shields.io/badge/deps-zero-ffb36b?style=flat-square" />
   <img alt="platform" src="https://img.shields.io/badge/platform-Ubuntu_%2F_Linux-6ad4d4?style=flat-square" />
 </p>
@@ -32,7 +32,7 @@
 - 记的东西全是普通文件（.md + .json），记事本打开就能看、能改，数据一步都不出你的电脑喵。
 - 它自己不是 AI，也不碰模型权重——真正动脑子的是你的 AI，它只负责记住喵。
 - 仓库里还附了一个 Obsidian 味道的桌面笔记软件，Ubuntu 上装个 .deb 就能用喵。
-- 现在桌面版 1.0.4、MCP 服务 1.0.0 测试版，MIT 协议，随便拿去玩喵。
+- 现在桌面版 1.0.4、MCP 服务 1.0.0 测试版，BSD 协议，随便拿去玩喵。
 
 ### English
 
@@ -45,7 +45,7 @@
 - Everything is stored as plain files (.md + .json) you can open and edit in any text editor, and nothing ever leaves your machine. Meow.
 - Mindbox is not an AI itself and never touches model weights — your AI does the thinking, Mindbox just remembers. Meow.
 - The repo also ships a desktop notes app with an Obsidian flavour; on Ubuntu you just install the .deb. Meow.
-- Right now: desktop 1.0.4, MCP server 1.0.0 beta, MIT licensed. Go play with it. Meow.
+- Right now: desktop 1.0.4, MCP server 1.0.0 beta, BSD-2-Clause licensed. Go play with it. Meow.
 
 > 一句话版：AI 有记性了，文件在你手上喵。<br />
 > One-liner: your AI remembers, and the files are yours. Meow.
@@ -987,4 +987,4 @@ tool["handler"](**args)
 
 ## 许可
 
-MIT
+BSD 2-Clause
