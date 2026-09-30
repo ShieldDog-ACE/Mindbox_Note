@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mindbox — 给 AI 装一个不会忘的脑子</title>
+<meta name="description" content="Mindbox：本地优先的三层 AI 记忆引擎 + Obsidian 风格的桌面笔记软件。通过 MCP 接入任何 AI 客户端，一切皆本地纯文件，零依赖。" />
+<meta name="theme-color" content="#0d0b12" />
+<meta property="og:title" content="Mindbox — 给 AI 装一个不会忘的脑子" />
+<meta property="og:description" content="三层记忆引擎（会话 / 草稿 / 永久知识图谱）+ Obsidian 风格桌面笔记软件。一切皆本地纯文件，零依赖。" />
+<meta property="og:image" content="./icon.png" />
+<meta property="og:type" content="website" />
+<link rel="icon" href="./icon.png" />
+<style>
+  :root{
+    --bg:#0d0b12;
+    --bg-soft:#141019;
+    --card:#191424;
+    --card-hi:#1f182c;
+    --line:#2b2440;
+    --line-soft:#221c33;
+    --fg:#ece9f4;
+    --fg-dim:#a49fb8;
+    --fg-faint:#6f6a80;
+    --purple:#8b5cf6;
+    --purple-deep:#6d28d9;
+    --purple-soft:#c4b5fd;
+    --green:#5ee6b0;
+    --amber:#fbbf24;
+    --red:#fb7185;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+    --maxw:1120px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);color:var(--fg);font-family:var(--sans);
+    line-height:1.75;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  }
+  /* 背景辉光 */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(900px 520px at 12% -8%, rgba(139,92,246,.20), transparent 62%),
+      radial-gradient(760px 460px at 92% 6%, rgba(109,40,217,.15), transparent 60%);
+  }
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px;position:relative;z-index:1}
+  section{position:relative;z-index:1}
+
+  /* ---------- 顶栏 ---------- */
+  header{
+    position:sticky;top:0;z-index:50;
+    backdrop-filter:blur(14px);
+    background:rgba(13,11,18,.78);
+    border-bottom:1px solid var(--line-soft);
+  }
+  .nav{display:flex;align-items:center;gap:26px;height:62px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.2px}
+  .brand img{width:28px;height:28px;border-radius:7px;display:block}
+  .nav-links{display:flex;gap:22px;margin-left:auto;font-size:14px}
+  .nav-links a{color:var(--fg-dim);text-decoration:none;transition:color .18s}
+  .nav-links a:hover{color:var(--fg)}
+  @media(max-width:820px){.nav-links{display:none}}
+
+  /* ---------- Hero ---------- */
+  .hero{padding:88px 0 72px;text-align:center}
+  .hero-icon{
+    width:118px;height:118px;border-radius:26px;display:block;margin:0 auto 30px;
+    box-shadow:0 24px 70px -18px rgba(139,92,246,.75), 0 0 0 1px rgba(196,181,253,.14);
+    animation:float 6s ease-in-out infinite;
+  }
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+  .hero h1{
+    font-size:clamp(38px,6.4vw,68px);line-height:1.12;letter-spacing:-1.6px;font-weight:800;
+    background:linear-gradient(100deg,#fff 8%,var(--purple-soft) 52%,#8b5cf6 96%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .hero .en{
+    display:block;margin-top:16px;font-size:16px;color:var(--fg-dim);
+    font-style:italic;letter-spacing:.2px;
+  }
+  .hero .lede{
+    max-width:660px;margin:26px auto 0;font-size:17px;color:var(--fg-dim);
+  }
+  .hero .lede b{color:var(--fg);font-weight:600}
+  .badges{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin-top:30px}
+  .badge{
+    font-family:var(--mono);font-size:12px;padding:5px 11px;border-radius:999px;
+    border:1px solid var(--line);background:var(--card);color:var(--fg-dim);
+  }
+  .badge i{font-style:normal;color:var(--purple-soft)}
+  .cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:38px}
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;padding:13px 26px;border-radius:12px;
+    font-size:15px;font-weight:600;text-decoration:none;transition:transform .16s,box-shadow .16s,background .16s;
+  }
+  .btn-primary{
+    background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;
+    box-shadow:0 12px 34px -12px rgba(139,92,246,.85);
+  }
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 18px 42px -12px rgba(139,92,246,.95)}
+  .btn-ghost{border:1px solid var(--line);color:var(--fg);background:rgba(255,255,255,.02)}
+  .btn-ghost:hover{background:rgba(255,255,255,.06);transform:translateY(-2px)}
+
+  /* ---------- 通用区块 ---------- */
+  .sec{padding:74px 0}
+  .sec-head{margin-bottom:42px}
+  .kicker{
+    font-family:var(--mono);font-size:12px;letter-spacing:2.4px;text-transform:uppercase;
+    color:var(--purple);margin-bottom:12px;
+  }
+  .sec-head h2{font-size:clamp(26px,3.6vw,36px);letter-spacing:-.8px;line-height:1.25}
+  .sec-head p{margin-top:12px;color:var(--fg-dim);max-width:660px}
+
+  .card{
+    background:var(--card);border:1px solid var(--line-soft);border-radius:16px;padding:26px;
+    transition:transform .2s,border-color .2s,background .2s;
+  }
+  .card:hover{transform:translateY(-4px);border-color:var(--line);background:var(--card-hi)}
+
+  /* ---------- 痛点对比 ---------- */
+  .pain{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:760px){.pain{grid-template-columns:1fr}}
+  .pain .card h3{font-size:18px;margin-bottom:12px;display:flex;align-items:center;gap:9px}
+  .pain ul{list-style:none;display:flex;flex-direction:column;gap:10px;font-size:15px;color:var(--fg-dim)}
+  .pain li{padding-left:22px;position:relative}
+  .pain li::before{position:absolute;left:0;top:0;font-family:var(--mono)}
+  .pain .before{border-color:rgba(251,113,133,.26)}
+  .pain .before li::before{content:"×";color:var(--red)}
+  .pain .after{border-color:rgba(94,230,176,.26)}
+  .pain .after li::before{content:"✓";color:var(--green)}
+
+  /* ---------- 三层记忆 ---------- */
+  .layers{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media(max-width:860px){.layers{grid-template-columns:1fr}}
+  .layer{
+    background:var(--card);border:1px solid var(--line-soft);border-radius:16px;
+    padding:24px 22px;position:relative;overflow:hidden;cursor:pointer;
+    transition:transform .2s,border-color .2s,box-shadow .2s;
+  }
+  .layer::after{
+    content:"";position:absolute;inset:0;opacity:0;transition:opacity .25s;
+    background:radial-gradient(320px 160px at 50% 0%,rgba(139,92,246,.16),transparent 70%);
+  }
+  .layer:hover{transform:translateY(-5px);border-color:rgba(139,92,246,.5);box-shadow:0 20px 50px -22px rgba(139,92,246,.6)}
+  .layer:hover::after{opacity:1}
+  .layer .no{font-family:var(--mono);font-size:12px;color:var(--purple);letter-spacing:1.6px}
+  .layer h3{font-size:19px;margin:8px 0 4px}
+  .layer .en-sub{font-size:12px;color:var(--fg-faint);letter-spacing:.4px;margin-bottom:14px}
+  .layer p{font-size:14.5px;color:var(--fg-dim)}
+  .layer .meta{
+    margin-top:16px;padding-top:14px;border-top:1px dashed var(--line);
+    font-family:var(--mono);font-size:12px;color:var(--fg-faint);
+  }
+
+  /* ---------- 置信度闸门（交互） ---------- */
+  .gate{
+    background:linear-gradient(160deg,var(--card),#161122);
+    border:1px solid var(--line);border-radius:20px;padding:34px;margin-top:8px;
+  }
+  .gate-grid{display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:center}
+  @media(max-width:820px){.gate-grid{grid-template-columns:1fr;gap:26px}}
+  .gate label{font-family:var(--mono);font-size:12px;color:var(--fg-faint);letter-spacing:1.4px;text-transform:uppercase}
+  .conf-read{display:flex;align-items:baseline;gap:12px;margin:10px 0 18px}
+  .conf-num{font-family:var(--mono);font-size:56px;font-weight:700;line-height:1;letter-spacing:-2px}
+  .conf-of{font-family:var(--mono);font-size:14px;color:var(--fg-faint)}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:99px;
+    background:linear-gradient(90deg,var(--red) 0%,var(--amber) 55%,var(--green) 100%);
+    outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:24px;height:24px;border-radius:50%;
+    background:#fff;border:4px solid #1a1425;box-shadow:0 4px 16px rgba(0,0,0,.6);cursor:grab;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:20px;height:20px;border-radius:50%;background:#fff;border:4px solid #1a1425;cursor:grab;
+  }
+  .ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--fg-faint);margin-top:9px}
+  .verdict{
+    border-radius:14px;padding:22px 24px;border:1px solid var(--line);
+    background:rgba(255,255,255,.022);transition:border-color .25s,background .25s;
+  }
+  .verdict .v-tag{
+    display:inline-block;font-family:var(--mono);font-size:12px;padding:4px 11px;border-radius:99px;
+    margin-bottom:12px;transition:all .25s;
+  }
+  .verdict h4{font-size:20px;margin-bottom:8px}
+  .verdict p{font-size:14.5px;color:var(--fg-dim)}
+  .verdict .code{
+    font-family:var(--mono);font-size:12.5px;color:var(--fg-faint);margin-top:14px;
+    padding-top:12px;border-top:1px dashed var(--line);
+  }
+
+  /* ---------- 工具网格 ---------- */
+  .tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:13px}
+  .tool{
+    background:var(--card);border:1px solid var(--line-soft);border-radius:12px;padding:16px 17px;
+    transition:border-color .18s,background .18s,transform .18s;
+  }
+  .tool:hover{border-color:rgba(139,92,246,.45);background:var(--card-hi);transform:translateY(-3px)}
+  .tool code{font-family:var(--mono);font-size:13px;color:var(--purple-soft);font-weight:600}
+  .tool span{display:block;font-size:13.5px;color:var(--fg-dim);margin-top:6px}
+
+  /* ---------- 快速开始 ---------- */
+  .steps{display:flex;flex-direction:column;gap:26px}
+  .step{display:flex;gap:20px}
+  .step .n{
+    flex:0 0 34px;height:34px;border-radius:10px;display:grid;place-items:center;
+    background:rgba(139,92,246,.14);border:1px solid rgba(139,92,246,.35);
+    font-family:var(--mono);font-size:14px;color:var(--purple-soft);font-weight:700;
+  }
+  .step .body{flex:1;min-width:0}
+  .step h4{font-size:16.5px;margin-bottom:6px}
+  .step p{font-size:14.5px;color:var(--fg-dim)}
+  .tabs{display:flex;gap:7px;margin:14px 0 0;flex-wrap:wrap}
+  .tab{
+    font-family:var(--mono);font-size:12px;padding:6px 13px;border-radius:8px;cursor:pointer;
+    border:1px solid var(--line);background:transparent;color:var(--fg-dim);transition:all .16s;
+  }
+  .tab:hover{color:var(--fg);border-color:var(--line-hi,#3a3155)}
+  .tab.on{background:rgba(139,92,246,.16);border-color:rgba(139,92,246,.55);color:var(--purple-soft)}
+  .codebox{
+    position:relative;margin-top:13px;background:#0a0810;border:1px solid var(--line-soft);
+    border-radius:12px;overflow:hidden;
+  }
+  .codebox .bar{
+    display:flex;align-items:center;gap:7px;padding:9px 13px;
+    border-bottom:1px solid var(--line-soft);background:rgba(255,255,255,.018);
+  }
+  .codebox .dot{width:10px;height:10px;border-radius:50%;background:#3a3350}
+  .codebox .fname{font-family:var(--mono);font-size:11.5px;color:var(--fg-faint);margin-left:5px}
+  .copy{
+    margin-left:auto;font-family:var(--mono);font-size:11.5px;padding:4px 11px;border-radius:7px;
+    cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--fg-dim);transition:all .16s;
+  }
+  .copy:hover{color:var(--fg);border-color:rgba(139,92,246,.5)}
+  .copy.done{color:var(--green);border-color:rgba(94,230,176,.5)}
+  pre{padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.7;color:#d6d0e8}
+  pre .s{color:#5ee6b0}
+  pre .k{color:#c4b5fd}
+  pre .c{color:#6f6a80;font-style:italic}
+
+  /* ---------- 特性格 ---------- */
+  .feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}
+  .feat .ico{font-size:22px;margin-bottom:12px;display:block}
+  .feat h4{font-size:16px;margin-bottom:7px}
+  .feat p{font-size:14px;color:var(--fg-dim)}
+
+  /* ---------- 实话表 ---------- */
+  .honest{border:1px solid rgba(251,191,36,.22);background:rgba(251,191,36,.035);border-radius:16px;padding:28px}
+  .honest h3{font-size:18px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+  .honest .sub{font-size:14px;color:var(--fg-dim);margin-bottom:18px}
+  .honest ol{margin-left:20px;display:flex;flex-direction:column;gap:11px;font-size:14.5px;color:var(--fg-dim)}
+  .honest li b{color:var(--fg);font-weight:600}
+
+  /* ---------- 规格表 ---------- */
+  .spec{width:100%;border-collapse:collapse;font-size:14.5px}
+  .spec tr{border-bottom:1px solid var(--line-soft)}
+  .spec td{padding:13px 4px;vertical-align:top}
+  .spec td:first-child{color:var(--fg-faint);width:180px;font-family:var(--mono);font-size:13px}
+  @media(max-width:600px){.spec td:first-child{width:120px}}
+
+  /* ---------- 页脚 ---------- */
+  footer{border-top:1px solid var(--line-soft);padding:44px 0 54px;margin-top:30px}
+  .foot{display:flex;justify-content:space-between;gap:26px;flex-wrap:wrap;align-items:flex-start}
+  .foot .big{font-size:16px;color:var(--fg)}
+  .foot .small{font-size:13.5px;color:var(--fg-faint);margin-top:8px;max-width:420px}
+  .foot-links{display:flex;gap:22px;font-size:14px;flex-wrap:wrap}
+  .foot-links a{color:var(--fg-dim);text-decoration:none}
+  .foot-links a:hover{color:var(--purple-soft)}
+
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}
+  .reveal.in{opacity:1;transform:none}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <div class="brand"><img src="./icon.png" alt="Mindbox" /><span>Mindbox</span></div>
+    <nav class="nav-links">
+      <a href="#layers">三层记忆</a>
+      <a href="#gate">置信度</a>
+      <a href="#tools">工具</a>
+      <a href="#start">快速开始</a>
+      <a href="#desktop">桌面版</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="wrap">
+    <img class="hero-icon" src="./icon.png" alt="Mindbox 图标" />
+    <h1>给 AI 装一个<br />不会忘的脑子</h1>
+    <span class="en">A brain that never forgets, bolted onto your AI. Meow.</span>
+    <p class="lede">
+      昨天陪 AI 聊了一下午的项目，今天开个新会话它就跟没发生过一样。<br />
+      不是它笨，是它没地方存东西。<b>Mindbox 就是给它安的那个脑子</b> ——
+      一个躺在你自己硬盘上的记忆库，通过 MCP 接进任何 AI 客户端。
+    </p>
+    <div class="badges">
+      <span class="badge">desktop <i>1.0.4</i></span>
+      <span class="badge">MCP <i>1.0.0</i></span>
+      <span class="badge">deps <i>zero</i></span>
+      <span class="badge">storage <i>plain files</i></span>
+      <span class="badge">license <i>BSD-2-Clause</i></span>
+    </div>
+    <div class="cta">
+      <a class="btn btn-primary" href="https://github.com/ShieldDog-ACE/Mindbox_Note" target="_blank" rel="noopener">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        在 GitHub 上查看
+      </a>
+      <a class="btn btn-ghost" href="#start">快速开始 →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 痛点 ============ -->
+<section class="sec">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="kicker">The Problem</div>
+      <h2>AI 的失忆症，是设计问题</h2>
+      <p>每次对话结束，一切归零。上周踩过的坑，这周原样再踩一遍——因为绝大多数 AI 客户端，压根没有"记忆"这个位置。</p>
+    </div>
+    <div class="pain">
+      <div class="card before">
+        <h3>没有 Mindbox 的时候</h3>
+        <ul>
+          <li>昨天聊了一下午的项目，今天它完全不认识你</li>
+          <li>踩过的坑重复踩，同一处错反复讲</li>
+          <li>把整段聊天历史一直背着，上下文很快爆掉</li>
+          <li>记忆服务把你的笔记传上云，数据不是你的了</li>
+        </ul>
+      </div>
+      <div class="card after">
+        <h3>接上 Mindbox 之后</h3>
+        <ul>
+          <li>开新会话先读一遍记忆，它还记得你</li>
+          <li>错误案例、技能配方沉淀下来，不再重复劳动</li>
+          <li>状态随手写出去再读回来，上下文压力小得多</li>
+          <li>全是硬盘上的普通文件，记事本就能打开改</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 三层记忆 ============ -->
+<section class="sec" id="layers">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="kicker">Three Layers</div>
+      <h2>记忆分三层，各管一段</h2>
+      <p>短期是便签纸，长期是资料柜，永久是刻在石头上的。分层的目的很实际：让"还没定论"和"已经确认"的东西分开住，AI 就不会把猜测当成事实。</p>
+    </div>
+    <div class="layers">
+      <div class="card layer">
+        <div class="no">LAYER 01</div>
+        <h3>短期记忆</h3>
+        <div class="en-sub">SESSION · 便签纸</div>
+        <p>当前会话的工作台。每个会话单独一个文件夹，记着这一轮在干什么、做到哪了、有什么中间结论、还剩什么没做。会话结束就冻结。</p>
+        <div class="meta">会话.json + 上下文.md</div>
+      </div>
+      <div class="card layer">
+        <div class="no">LAYER 02</div>
+        <h3>长期记忆</h3>
+        <div class="en-sub">DRAFTS · 资料柜</div>
+        <p>过渡区，放"可能有用但还没定论"的东西。分 9 类：任务记录、技能配方、资料摘要、用户偏好、待验证三元组、错误案例、情绪历史、外部大脑效果、项目上下文。</p>
+        <div class="meta">9 个分类 · 每条带置信度与来源</div>
+      </div>
+      <div class="card layer">
+        <div class="no">LAYER 03</div>
+        <h3>永久记忆</h3>
+        <div class="en-sub">KNOWLEDGE GRAPH · 刻在石头上</div>
+        <p>只放已经确认的事实，以三元组形式存：主语 —[关系]→ 宾语，构成一张知识图，支持顺着关系往下找。存了"exfat 不支持符号链接"，以后问起符号链接，能沿着关系把相关的都捞出来。</p>
+        <div class="meta">条目 + triples.json</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 置信度闸门 ============ -->
+<section class="sec" id="gate">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="kicker">Confidence Gate</div>
+      <h2>置信度当闸门，挡住 AI 随口瞎编</h2>
+      <p>写一条记忆时要报一个 0–100 的把握度，系统按这个分流。不敢肯定就别往永久里塞——这是整套设计里最实用的一条规则。</p>
+    </div>
+    <div class="gate">
+      <div class="gate-grid">
+        <div>
+          <label for="conf">Confidence Score</label>
+          <div class="conf-read">
+            <span class="conf-num" id="confNum">88</span>
+            <span class="conf-of">/ 100</span>
+          </div>
+          <input type="range" id="conf" min="0" max="100" value="88" step="1" aria-label="置信度" />
+          <div class="ticks"><span>0 · 不收</span><span>60 · 待验证</span><span>85 · 永久</span><span>100</span></div>
+        </div>
+        <div class="verdict" id="verdict">
+          <span class="v-tag" id="vTag">PASSED</span>
+          <h4 id="vTitle">写入永久记忆</h4>
+          <p id="vDesc">把握度足够高，直接进知识图，成为长期可用的事实。</p>
+          <div class="code" id="vCode">add_triple(confidence=88) → 永久记忆/triples.json</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 工具 ============ -->
+<section class="sec" id="tools">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="kicker">9 Tools</div>
+      <h2>只给 AI 9 个工具，不多</h2>
+      <p>工具越多，AI 越容易挑错、越浪费上下文。凡是能被别的工具覆盖的，或者你打开文件夹就能看的，一律没做——中间版本曾经有 17 个，后来砍掉了 8 个。</p>
+    </div>
+    <div class="tools">
+      <div class="tool"><code>memory_overview</code><span>看三层记忆的总体情况</span></div>
+      <div class="tool"><code>session_open</code><span>开一个会话（也返回已有快照，等于读）</span></div>
+      <div class="tool"><code>session_update</code><span>更新会话进度</span></div>
+      <div class="tool"><code>session_close</code><span>结束会话，可把结论转进长期记忆</span></div>
+      <div class="tool"><code>memory_add</code><span>写一条长期 / 永久条目</span></div>
+      <div class="tool"><code>memory_query</code><span>检索记忆</span></div>
+      <div class="tool"><code>memory_delete</code><span>删一条（纠错用）</span></div>
+      <div class="tool"><code>add_triple</code><span>写三元组，按置信度自动分流</span></div>
+      <div class="tool"><code>query_graph</code><span>在知识图上检索</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 快速开始 ============ -->
+<section class="sec" id="start">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="kicker">Quick Start</div>
+      <h2>三步接进去，不用装任何东西</h2>
+      <p>没有安装包，不需要编译。整个项目只用 Python 标准库，<b>零第三方依赖</b>——不需要 pip install，不需要虚拟环境，不需要数据库。</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="n">1</div>
+        <div class="body">
+          <h4>拿到代码</h4>
+          <p>克隆仓库，或者直接下载 ZIP 解压到任意目录。真正必需的只有两个文件：<code style="font-family:var(--mono);color:var(--purple-soft)">server.py</code> 和 <code style="font-family:var(--mono);color:var(--purple-soft)">memory_store.py</code>，哪怕只拷这两个出去也能跑。</p>
+          <div class="codebox">
+            <div class="bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i><span class="fname">bash</span>
+              <button class="copy" data-copy="git clone https://github.com/ShieldDog-ACE/Mindbox_Note.git">复制</button></div>
+            <pre><span class="c"># 克隆仓库</span>
+git clone https://github.com/ShieldDog-ACE/Mindbox_Note.git</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="n">2</div>
+        <div class="body">
+          <h4>让 AI 客户端认识它</h4>
+          <p>在客户端的 MCP 设置里加一段配置。<code style="font-family:var(--mono);color:var(--purple-soft)">command</code> 一定要写<b>绝对路径</b>，客户端的工作目录不固定。</p>
+          <div class="tabs" id="tabs">
+            <button class="tab on" data-t="trae">Trae</button>
+            <button class="tab" data-t="cursor">Cursor</button>
+            <button class="tab" data-t="claude">Claude Code</button>
+          </div>
+          <div class="codebox">
+            <div class="bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i><span class="fname" id="tabFile">mcp.json</span>
+              <button class="copy" id="tabCopy">复制</button></div>
+            <pre id="tabBody"></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="n">3</div>
+        <div class="body">
+          <h4>先自己确认服务是好的</h4>
+          <p>这一步不需要任何客户端配合。正常会打印服务器名、版本、工具数量，以及三层记忆当前各有多少条。</p>
+          <div class="codebox">
+            <div class="bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i><span class="fname">bash</span>
+              <button class="copy" data-copy="python3 /你的路径/Mindbox-MCP/server.py --check">复制</button></div>
+            <pre>python3 /你的路径/Mindbox-MCP/server.py <span class="k">--check</span></pre>
+          </div>
+          <p style="margin-top:14px">接好之后不用操心调工具，AI 会自己用。你只要正常说话：<br />
+          「记住：我的项目在 /x/y」·「上次那个 bug 怎么修的」·「今天先到这」</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 特性 ============ -->
+<section class="sec">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="kicker">Why Trust It</div>
+      <h2>数据主权，是它唯一的设计立场</h2>
+    </div>
+    <div class="feats">
+      <div class="card feat">
+        <span class="ico">📁</span>
+        <h4>一切皆纯文件</h4>
+        <p>JSON 存结构，Markdown 存给人看的摘要。记事本打开就能看、能改、能删，改完立刻生效，不用重启。不存在"导不出来"这回事。</p>
+      </div>
+      <div class="card feat">
+        <span class="ico">🔌</span>
+        <h4>零依赖</h4>
+        <p>只用 Python 标准库的 7 个模块。不需要 pip、不需要虚拟环境、不需要 Node.js、不需要数据库。依赖越少，三年后它还能跑的概率越大。</p>
+      </div>
+      <div class="card feat">
+        <span class="ico">🔒</span>
+        <h4>完全离线</h4>
+        <p>stdio 本地进程，不开端口、不联网、不上传。它本身不是 AI，也不碰任何模型权重——真正动脑子的是你的 AI，它只负责记住。</p>
+      </div>
+      <div class="card feat">
+        <span class="ico">🔍</span>
+        <h4>检索是真的能搜到</h4>
+        <p>中英文都能搜，不用装分词库。查询词和库内内容都切一遍，按重合度乘置信度排序——"打包 数据目录 笔记丢失"这种组合查询，能把最相关的那条错误案例排到最前面。</p>
+      </div>
+      <div class="card feat">
+        <span class="ico">🛡️</span>
+        <h4>三个根文件夹删不掉</h4>
+        <p>短期 / 长期 / 永久记忆是系统自带根目录，删除操作在工具层面就被拦住，每次启动还会自检、缺了自动重建。记忆系统最怕的不是写错，是被清空。</p>
+      </div>
+      <div class="card feat">
+        <span class="ico">🧩</span>
+        <h4>接进任何客户端</h4>
+        <p>标准 MCP 协议（JSON-RPC 2.0 / stdio），手写的协议层没引官方 SDK。Trae、Cursor、Claude Code、CodeBuddy 都能接，配置就是一段 JSON。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 桌面版 ============ -->
+<section class="sec" id="desktop">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="kicker">Desktop App</div>
+      <h2>还附了一个 Obsidian 味道的笔记软件</h2>
+      <p>Mindbox 的记忆引擎最初就是这款桌面笔记软件的内部模块，后来觉得单独拿出来也有用，就拆成了独立的 MCP 服务。两样东西在一个仓库里，分开装。</p>
+    </div>
+    <div class="card" style="padding:30px">
+      <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:34px;align-items:start" class="de-grid">
+        <div>
+          <h3 style="font-size:18px;margin-bottom:16px">桌面版 1.0.4 · Ubuntu / Linux</h3>
+          <div class="tools" style="grid-template-columns:1fr 1fr">
+            <div class="tool"><code>React + TS + Vite</code><span>CodeMirror 6 编辑器</span></div>
+            <div class="tool"><code>力导向关系图</code><span>双链 / 标签 / 反链</span></div>
+            <div class="tool"><code>白板 Canvas</code><span>连线即关系</span></div>
+            <div class="tool"><code>FastAPI 后端</code><span>内嵌 /mcp 端点</span></div>
+          </div>
+          <p style="font-size:14.5px;color:var(--fg-dim);margin-top:16px">
+            数据存在 <code style="font-family:var(--mono);color:var(--purple-soft)">~/.config/mindbox/vault</code>，升级重装不会丢。
+            目标机需要系统里有 <b>Python 3.12</b>（后端依赖随包分发，解释器用系统的，Ubuntu 24.04 自带）。
+          </p>
+        </div>
+        <div class="codebox" style="margin-top:0">
+          <div class="bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i><span class="fname">安装</span>
+            <button class="copy" data-copy="sudo apt install ./mindbox_1.0.4_amd64.deb">复制</button></div>
+          <pre><span class="c"># 下载 .deb 后安装</span>
+sudo apt install ./mindbox_1.0.4_amd64.deb
+
+<span class="c"># 从源码构建</span>
+cd Mindbox &amp;&amp; npm install
+node node_modules/vite/bin/vite.js build
+node node_modules/electron-builder/cli.js --linux deb</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 实话 ============ -->
+<section class="sec">
+  <div class="wrap reveal">
+    <div class="honest">
+      <h3>⚠️ 一些实话</h3>
+      <div class="sub">知道这些再决定用不用，比看到一堆好话强。以下是当前版本的实际情况：</div>
+      <ol>
+        <li><b>没有自动升级机制。</b>原设计的"引用超 100 次、成功率超 90% 就升入永久"门槛实际中基本达不到，功能暂时撤掉。想让某条进永久，用 <code style="font-family:var(--mono)">add_triple</code> 以 85 分以上写一遍。</li>
+        <li><b>并发写入没有加锁。</b>单个 AI 使用没影响；同时挂多个客户端且同一秒写同一条记忆，理论上可能互相覆盖。</li>
+        <li><b>中文分词是自己写的</b>（单字 + 双字），不是 jieba。好处零依赖，坏处召回率不如专业分词库。</li>
+        <li><b>只在 Trae 上做过真机接入测试。</b>Cursor、Claude Code、CodeBuddy 的配置都给了，但没实地跑过。</li>
+        <li><b>没有鉴权。</b>因为它是本地 stdio 进程，只有本机能碰。做成 HTTP 远程服务的话必须自己补 Token。</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 规格 ============ -->
+<section class="sec">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="kicker">Specs</div>
+      <h2>版本与规格</h2>
+    </div>
+    <table class="spec">
+      <tr><td>服务名</td><td>mindbox-memory</td></tr>
+      <tr><td>MCP 版本</td><td>1.0.0（0.0 测试版）</td></tr>
+      <tr><td>桌面版</td><td>Mindbox 1.0.4 · Electron + React + FastAPI</td></tr>
+      <tr><td>工具数</td><td>9</td></tr>
+      <tr><td>protocolVersion</td><td>2025-06-18</td></tr>
+      <tr><td>传输</td><td>stdio，换行分隔的 JSON-RPC 2.0</td></tr>
+      <tr><td>运行环境</td><td>Python 3.8+（开发与实测用 3.12），Linux / macOS / Windows</td></tr>
+      <tr><td>依赖</td><td>无（Python 标准库）</td></tr>
+      <tr><td>测试情况</td><td>协议层端到端自测 46 项断言全通过 · 精简后回归 24 项全通过 · 真机接入 Trae 跑通完整流程</td></tr>
+      <tr><td>许可</td><td>BSD-2-Clause</td></tr>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <div>
+      <div class="big">短期是便签纸，长期是资料柜，永久是刻在石头上的。</div>
+      <div class="small">你负责用，它负责记。数据全在你自己的硬盘上，一步都不出你的电脑喵。</div>
+    </div>
+    <div class="foot-links">
+      <a href="https://github.com/ShieldDog-ACE/Mindbox_Note" target="_blank" rel="noopener">GitHub 仓库</a>
+      <a href="https://github.com/ShieldDog-ACE/Mindbox_Note/issues" target="_blank" rel="noopener">反馈问题</a>
+      <a href="#start">快速开始</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ---------- 置信度闸门 ---------- */
+(function(){
+  var sl = document.getElementById('conf');
+  var num = document.getElementById('confNum');
+  var tag = document.getElementById('vTag');
+  var title = document.getElementById('vTitle');
+  var desc = document.getElementById('vDesc');
+  var code = document.getElementById('vCode');
+  var box = document.getElementById('verdict');
+  var STATES = [
+    {min:85, tag:'PASSED', color:'#5ee6b0', title:'写入永久记忆',
+     desc:'把握度足够高，直接进知识图，成为长期可用的事实。',
+     code:'add_triple(confidence=%v) → 永久记忆/triples.json'},
+    {min:60, tag:'PENDING', color:'#fbbf24', title:'进长期记忆 · 待验证区',
+     desc:'有一定依据但还不敢下结论，先放过渡区观察，附上置信度与来源。',
+     code:'memory_add(layer="长期记忆", confidence=%v) → 待验证三元组/'},
+    {min:0, tag:'REJECTED', color:'#fb7185', title:'直接退回，不收',
+     desc:'证据不足。挡住的正是"AI 随口瞎编"那一类内容——不敢肯定就别往库里塞。',
+     code:'memory_add(confidence=%v) → 已拒绝'}
+  ];
+  function render(){
+    var v = +sl.value;
+    num.textContent = v;
+    var st = STATES.find(function(s){ return v >= s.min; });
+    num.style.color = st.color;
+    tag.textContent = st.tag;
+    tag.style.color = st.color;
+    tag.style.background = st.color + '22';
+    tag.style.border = '1px solid ' + st.color + '55';
+    title.textContent = st.title;
+    desc.textContent = st.desc;
+    code.textContent = st.code.replace('%v', v);
+    box.style.borderColor = st.color + '4d';
+    box.style.background = st.color + '0d';
+  }
+  sl.addEventListener('input', render);
+  render();
+})();
+
+/* ---------- 客户端配置切换 ---------- */
+(function(){
+  var DATA = {
+    trae:{file:'设置 → MCP → 添加服务器 → 手动配置',
+      body:'{\n  "mcpServers": {\n    "mindbox-memory": {\n      "command": "/你的绝对路径/Mindbox-MCP/run-mindbox-mcp",\n      "args": [],\n      "env": {}\n    }\n  }\n}',
+      note:'贴进去保存，然后 Ctrl+Shift+P → Reload Window 刷新工具列表。'},
+    cursor:{file:'~/.cursor/mcp.json',
+      body:'{\n  "mcpServers": {\n    "mindbox-memory": {\n      "command": "/你的绝对路径/Mindbox-MCP/run-mindbox-mcp",\n      "args": [],\n      "env": {}\n    }\n  }\n}',
+      note:'合并进配置文件后重启 Cursor。'},
+    claude:{file:'项目根目录 .mcp.json',
+      body:'{\n  "mcpServers": {\n    "mindbox-memory": {\n      "command": "/你的绝对路径/Mindbox-MCP/run-mindbox-mcp",\n      "args": [],\n      "env": {}\n    }\n  }\n}',
+      note:'也可以直接跑：claude mcp add-json mindbox-memory "$(cat mcp.json)"'}
+  };
+  var cur = 'trae';
+  var body = document.getElementById('tabBody');
+  var file = document.getElementById('tabFile');
+  function paint(){
+    var d = DATA[cur];
+    file.textContent = d.file;
+    body.textContent = d.body;
+  }
+  paint();
+  document.getElementById('tabs').addEventListener('click', function(e){
+    var t = e.target.closest('.tab'); if(!t) return;
+    [].forEach.call(this.querySelectorAll('.tab'), function(x){ x.classList.remove('on'); });
+    t.classList.add('on'); cur = t.dataset.t; paint();
+  });
+  document.getElementById('tabCopy').addEventListener('click', function(){
+    copyText(DATA[cur].body, this);
+  });
+})();
+
+/* ---------- 复制 ---------- */
+function copyText(text, btn){
+  var ok = function(){
+    var old = btn.textContent; btn.textContent = '已复制 ✓'; btn.classList.add('done');
+    setTimeout(function(){ btn.textContent = old; btn.classList.remove('done'); }, 1600);
+  };
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(text).then(ok).catch(function(){ fallback(); });
+  } else { fallback(); }
+  function fallback(){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); ok(); }catch(e){}
+    document.body.removeChild(ta);
+  }
+}
+[].forEach.call(document.querySelectorAll('.copy[data-copy]'), function(b){
+  b.addEventListener('click', function(){ copyText(this.dataset.copy, this); });
+});
+
+/* ---------- 滚动入场 ---------- */
+(function(){
+  var els = document.querySelectorAll('.reveal');
+  if(!('IntersectionObserver' in window)){
+    [].forEach.call(els, function(e){ e.classList.add('in'); }); return;
+  }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
+    });
+  }, {threshold:.12, rootMargin:'0px 0px -60px 0px'});
+  [].forEach.call(els, function(e){ io.observe(e); });
+})();
+
+/* ---------- 桌面版响应式兜底 ---------- */
+(function(){
+  function fix(){
+    var g = document.querySelector('.de-grid');
+    if(g) g.style.gridTemplateColumns = window.innerWidth < 820 ? '1fr' : '1.15fr 1fr';
+  }
+  fix(); window.addEventListener('resize', fix);
+})();
+</script>
+</body>
+</html>
